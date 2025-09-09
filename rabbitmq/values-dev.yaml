@@ -1,0 +1,13 @@
+persistence:
+  storageClass: "openebs-hostpath"
+auth:
+  existingPasswordSecret: jartracking-secret
+  existingSecretPasswordKey: "password"
+ingress:
+  enabled: true
+  hostname: rabbitmq.dev.jartracking.co.uk
+  ingressClassName: "kong"
+  annotations:
+      ingress.kubernetes.io/force-ssl-redirect: "true"
+      konghq.com/host-aliases: "rabbitmq.jartracking.co.uk"
+      
