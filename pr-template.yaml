@@ -1,0 +1,58 @@
+apiVersion: scaffolder.backstage.io/v0beta3
+kind: Template
+metadata:
+  name: set-spec-type
+  title: Set spec.type in grpc-api.yaml (PR)
+  description: Opens a PR that updates spec.type in hadarkcommit/idp-ingestion-example/grpc-api.yaml
+spec:
+  type: ops
+  owner: group:default/platform-admins
+
+  parameters:
+    - title: New value for spec.type
+      required: [newType]
+      properties:
+        newType:
+          title: spec.type
+          type: string
+          description: The new value to set for spec.type (e.g., ClusterIP / NodePort / LoadBalancer)
+
+        branchName:
+          title: Branch for the PR
+          type: string
+          default: backstage/spec-type-${{ parameters.newType }}
+
+        baseBranch:
+          title: Base branch
+          type: string
+          default: main
+
+        prTitle:
+          title: PR title
+          type: string
+          default: "chore(backstage): set spec.type to ${{ parameters.newType }}"
+
+        prBody:
+          title: PR description
+          type: string
+          default: "Updated via Backstage Scaffolder"
+
+  steps:
+    - id: patch-and-pr
+      name: Patch YAML & open PR
+      action: github:file:yaml:patch
+      input:
+        repoUrl: github.com?owner=hadarkcommit&repo=idp-ingestion-example
+        filePath: grpc-api.yaml
+        yamlPath: spec.type
+        value: ${{ parameters.newType }}
+        branchName: ${{ parameters.branchName }}
+        targetBranchName: ${{ parameters.baseBranch }}
+        title: ${{ parameters.prTitle }}
+        description: ${{ parameters.prBody }}
+
+  output:
+    links:
+      - title: Open the PR
+        url: ${{ steps.patch-and-pr.output.remoteUrl }}
+
