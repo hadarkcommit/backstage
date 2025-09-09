@@ -1,9 +1,9 @@
-apiVersion: scaffolder.backstage.io/v0beta3
+apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: set-spec-type
+  name: set-spec-type          # <-- not "spec.type"
   title: Set spec.type in grpc-api.yaml (PR)
-  description: Opens a PR that updates spec.type in hadarkcommit/idp-ingestion-example/grpc-api.yaml
+  description: Opens a PR that updates spec.type
 spec:
   type: ops
   owner: group:default/platform-admins
