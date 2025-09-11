@@ -1,0 +1,89 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: yaml-value-update-pr
+  title: Update a YAML value in a repo (opens PR)
+  description: Sets a value at a YAML path and opens a GitHub PR.
+spec:
+  owner: group:default/platform
+  type: utility
+
+  parameters:
+    - title: Target repository
+      required: [repoHost, repoOwner, repo, branch]
+      properties:
+        repoHost:
+          title: Host
+          type: string
+          default: github.com
+          enum: [github.com]
+        repoOwner:
+          title: Owner/Org
+          type: string
+        repo:
+          title: Repo
+          type: string
+        branch:
+          title: Base branch
+          type: string
+          default: main
+
+    - title: File & edit
+      required: [filePath, yamlPath, newValue]
+      properties:
+        filePath:
+          title: Path to YAML file (from repo root)
+          type: string
+          description: e.g. helm/values.yaml
+        yamlPath:
+          title: YAML path (dot notation)
+          type: string
+          description: e.g. image.tag or replicas
+        newValue:
+          title: New value (string or JSON)
+          type: string
+          description: e.g. "1.2.3" or {"resources":{"limits":{"cpu":"500m"}}}
+        prTitle:
+          title: PR title
+          type: string
+          default: "chore(backstage): update YAML value"
+        prBranch:
+          title: Feature branch
+          type: string
+          default: "chore/backstage-yaml-edit"
+
+  steps:
+    - id: fetch
+      name: Fetch repo
+      action: fetch:plain
+      input:
+        # UrlReader supports GitHub directories via /tree/<branch>
+        url: https://github.com/${{ parameters.repoOwner }}/${{ parameters.repo }}/tree/${{ parameters.branch }}
+        targetPath: repo
+
+    - id: set
+      name: Set YAML value
+      action: yaml:set
+      input:
+        # yaml:set accepts a local path in the scaffolder workspace
+        url: ./repo/${{ parameters.filePath }}
+        path: ${{ parameters.yamlPath }}
+        value: ${{ parameters.newValue }}
+
+    - id: pr
+      name: Open PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
+        branchName: ${{ parameters.prBranch }}
+        targetBranchName: ${{ parameters.branch }}
+        title: ${{ parameters.prTitle }}
+        description: "Set `${{ parameters.yamlPath }}` in `${{ parameters.filePath }}` to `${{ parameters.newValue }}` via Backstage."
+        sourcePath: repo
+        commitMessage: "chore(backstage): set ${{ parameters.yamlPath }} in ${{ parameters.filePath }}"
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['pr'].output.remoteUrl }}
+
