@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: toggle-openapi-booleans-direct-one-commit
-  title: Toggle booleans in openapi.yaml (direct, one commit)
-  description: 'Set booleans at metadata.name and spec.type in a single commit.'
+  name: toggle-openapi-with-prefill
+  title: Toggle booleans in openapi.yaml (prefilled)
+  description: 'Reads current booleans from YAML, pre-checks the boxes, and writes back in one commit.'
 spec:
   owner: group:default/platform
   type: utility
@@ -12,43 +12,44 @@ spec:
     - title: Target repository
       required: [repoOwner, repo, branch]
       properties:
-        repoOwner: { type: string, default: hadarkcommit }
-        repo:      { type: string, default: idp-ingestion-example }
-        branch:    { type: string, default: main }
+        repoOwner: { type: string, title: Owner/Org, default: hadarkcommit }
+        repo:      { type: string, title: Repo,      default: idp-ingestion-example }
+        branch:    { type: string, title: Branch,    default: main }
 
-    - title: Pick fields
-      required: [metadataNameFlag, specTypeFlag]
+    - title: Toggles (pre-filled from YAML)
+      required: [toggles]
       properties:
-        metadataNameFlag:
-          type: boolean
-          title: metadata.name → boolean
-          default: false
-        specTypeFlag:
-          type: boolean
-          title: spec.type → boolean
-          default: false
+        toggles:
+          type: object
+          ui:field: ToggleFromYaml            # <-- our field extension
+          ui:options:
+            ownerParam: repoOwner
+            repoParam: repo
+            branchParam: branch
+            filePath: openapi.yaml
+            fields:
+              - { name: metadataNameFlag, title: 'metadata.name', path: 'metadata.name' }
+              - { name: specTypeFlag,     title: 'spec.type',     path: 'spec.type' }
 
   steps:
     - id: commit
-      name: Apply both changes in one commit
+      name: Apply both changes as one commit
       action: github:file:yaml:commit:multi
       input:
         repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
         filePath: openapi.yaml
         changes:
           - yamlPath: metadata.name
-            value: ${{ parameters.metadataNameFlag }}
+            value: ${{ parameters.toggles.metadataNameFlag }}
           - yamlPath: spec.type
-            value: ${{ parameters.specTypeFlag }}
+            value: ${{ parameters.toggles.specTypeFlag }}
         targetBranchName: ${{ parameters.branch }}
         commitMessage: >-
-          chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }},
-          spec.type=${{ parameters.specTypeFlag }} in openapi.yaml
+          chore(backstage): set metadata.name=${{ parameters.toggles.metadataNameFlag }},
+          spec.type=${{ parameters.toggles.specTypeFlag }} in openapi.yaml
 
   output:
     links:
       - title: View commit
         url: ${{ steps.commit.output.commitUrl }}
-      - title: View file
-        url: ${{ steps.commit.output.contentUrl }}
 
