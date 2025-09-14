@@ -1,0 +1,69 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: toggle-fields-in-openapi
+  title: Toggle fields in openapi.yaml (direct commit)
+  description: Two checkboxes that set boolean values in openapi.yaml at metadata.name and spec.type.
+spec:
+  owner: group:default/platform
+  type: utility
+
+  parameters:
+    - title: Target repository
+      required: [repoOwner, repo, branch]
+      properties:
+        repoOwner:
+          title: Owner/Org
+          type: string
+        repo:
+          title: Repo
+          type: string
+        branch:
+          title: Target branch
+          type: string
+          default: main
+
+    - title: Pick fields to set (true/false)
+      required: [metadataNameFlag, specTypeFlag]
+      properties:
+        metadataNameFlag:
+          title: metadata.name -> boolean
+          type: boolean
+          default: false
+          description: If checked sets metadata.name: true, otherwise false.
+        specTypeFlag:
+          title: spec.type -> boolean
+          type: boolean
+          default: false
+          description: If checked sets spec.type: true, otherwise false.
+
+  steps:
+    - id: set-metadata
+      name: Commit metadata.name boolean
+      action: github:file:yaml:commit
+      input:
+        repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
+        filePath: openapi.yaml
+        yamlPath: metadata.name
+        value: ${{ parameters.metadataNameFlag }}
+        targetBranchName: ${{ parameters.branch }}
+        commitMessage: "chore(backstage): set metadata.name to ${{ parameters.metadataNameFlag }} in openapi.yaml"
+
+    - id: set-spec-type
+      name: Commit spec.type boolean
+      action: github:file:yaml:commit
+      input:
+        repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
+        filePath: openapi.yaml
+        yamlPath: spec.type
+        value: ${{ parameters.specTypeFlag }}
+        targetBranchName: ${{ parameters.branch }}
+        commitMessage: "chore(backstage): set spec.type to ${{ parameters.specTypeFlag }} in openapi.yaml"
+
+  output:
+    links:
+      - title: Commit for metadata.name
+        url: ${{ steps['set-metadata'].output.commitUrl }}
+      - title: Commit for spec.type
+        url: ${{ steps['set-spec-type'].output.commitUrl }}
+
