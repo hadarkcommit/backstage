@@ -3,6 +3,7 @@ kind: Template
 metadata:
   name: toggle-openapi-booleans-direct-one-commit
   title: Toggle booleans in openapi.yaml (direct, one commit)
+  description: 'Set booleans at metadata.name and spec.type in a single commit.'
 spec:
   owner: group:default/platform
   type: utility
@@ -18,8 +19,14 @@ spec:
     - title: Pick fields
       required: [metadataNameFlag, specTypeFlag]
       properties:
-        metadataNameFlag: { type: boolean, title: metadata.name → boolean, default: false }
-        specTypeFlag:     { type: boolean, title: spec.type → boolean,     default: false }
+        metadataNameFlag:
+          type: boolean
+          title: metadata.name → boolean
+          default: false
+        specTypeFlag:
+          type: boolean
+          title: spec.type → boolean
+          default: false
 
   steps:
     - id: commit
@@ -29,8 +36,10 @@ spec:
         repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
         filePath: openapi.yaml
         changes:
-          - { yamlPath: metadata.name, value: ${{ parameters.metadataNameFlag }} }
-          - { yamlPath: spec.type,     value: ${{ parameters.specTypeFlag }} }
+          - yamlPath: metadata.name
+            value: ${{ parameters.metadataNameFlag }}
+          - yamlPath: spec.type
+            value: ${{ parameters.specTypeFlag }}
         targetBranchName: ${{ parameters.branch }}
         commitMessage: >-
           chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }},
@@ -40,4 +49,6 @@ spec:
     links:
       - title: View commit
         url: ${{ steps.commit.output.commitUrl }}
+      - title: View file
+        url: ${{ steps.commit.output.contentUrl }}
 
