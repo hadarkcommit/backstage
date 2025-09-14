@@ -1,0 +1,81 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: yaml-value-update-direct
+  title: Update a YAML value in a repo (direct commit)
+  description: Sets a value at a YAML path and commits directly to the target branch.
+spec:
+  owner: group:default/platform
+  type: utility
+
+  parameters:
+    - title: Target repository
+      required: [repoHost, repoOwner, repo, branch]
+      properties:
+        repoHost:
+          title: Host
+          type: string
+          default: github.com
+          enum: [github.com]
+        repoOwner:
+          title: Owner/Org
+          type: string
+        repo:
+          title: Repo
+          type: string
+        branch:
+          title: Target branch
+          type: string
+          default: main
+
+    - title: File & edit
+      required: [filePath, yamlPath, newValue]
+      properties:
+        filePath:
+          title: Path to YAML file (from repo root)
+          type: string
+          description: e.g. helm/values.yaml
+        yamlPath:
+          title: YAML path (dot notation)
+          type: string
+          description: e.g. image.tag or replicas
+        newValue:
+          title: New value
+          type: string
+          description: e.g. "1.2.3" (string). If you need object/array/number/boolean, we can extend schema.
+
+  steps:
+    - id: fetch
+      name: Fetch repo
+      action: fetch:plain
+      input:
+        url: https://github.com/${{ parameters.repoOwner }}/${{ parameters.repo }}/tree/${{ parameters.branch }}
+        targetPath: repo
+
+    - id: set
+      name: Set YAML value (preview only)
+      action: yaml:set
+      input:
+        url: ./repo/${{ parameters.filePath }}
+        path: ${{ parameters.yamlPath }}
+        value: ${{ parameters.newValue }}
+
+    # ⬇️ Changed step: commit directly instead of opening a PR
+    - id: commit
+      name: Commit YAML change to branch
+      action: github:file:yaml:commit
+      input:
+        repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
+        filePath: ${{ parameters.filePath }}
+        yamlPath: ${{ parameters.yamlPath }}
+        value: ${{ parameters.newValue }}
+        targetBranchName: ${{ parameters.branch }}
+        commitMessage: "chore(backstage): set ${{ parameters.yamlPath }} in ${{ parameters.filePath }} to ${{ parameters.newValue }}"
+
+  output:
+    links:
+      - title: View commit
+        url: ${{ steps.commit.output.commitUrl }}
+      - title: View file
+        url: ${{ steps.commit.output.contentUrl }}
+
