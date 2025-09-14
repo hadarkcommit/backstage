@@ -3,58 +3,50 @@ kind: Template
 metadata:
   name: toggle-openapi-prefill
   title: Toggle booleans in openapi.yaml (prefilled, one commit)
+  description: 'Prefills checkboxes from repo and lets dev change them; writes both in a single commit.'
 spec:
   owner: group:default/platform
   type: utility
 
   parameters:
-    - title: Repo
+    - title: Repository
       required: [repoOwner, repo, branch]
       properties:
         repoOwner: { type: string, default: hadarkcommit }
         repo:      { type: string, default: idp-ingestion-example }
         branch:    { type: string, default: main }
 
-    - title: Flags
-      required: [metadataNameFlag, specTypeFlag]
+    - title: Flags (prefilled from YAML)
+      required: [toggles]
       properties:
-        metadataNameFlag:
-          type: boolean
-          title: metadata.name
-          ui:field: YamlBooleanToggle
+        toggles:
+          type: object
+          ui:field: YamlBooleanToggles
           ui:options:
             ownerParam: repoOwner
             repoParam: repo
             branchParam: branch
             filePath: openapi.yaml
-            yamlPath: metadata.name
-        specTypeFlag:
-          type: boolean
-          title: spec.type
-          ui:field: YamlBooleanToggle
-          ui:options:
-            ownerParam: repoOwner
-            repoParam: repo
-            branchParam: branch
-            filePath: openapi.yaml
-            yamlPath: spec.type
+            fields:
+              - { name: metadataNameFlag, title: 'metadata.name', path: 'metadata.name' }
+              - { name: specTypeFlag,     title: 'spec.type',     path: 'spec.type' }
 
   steps:
     - id: commit
-      name: Apply both changes in one commit
+      name: Apply both changes as one commit
       action: github:file:yaml:commit:multi
       input:
         repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
         filePath: openapi.yaml
         changes:
           - yamlPath: metadata.name
-            value: ${{ parameters.metadataNameFlag }}
+            value: ${{ parameters.toggles.metadataNameFlag }}
           - yamlPath: spec.type
-            value: ${{ parameters.specTypeFlag }}
+            value: ${{ parameters.toggles.specTypeFlag }}
         targetBranchName: ${{ parameters.branch }}
         commitMessage: >-
-          chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }},
-          spec.type=${{ parameters.specTypeFlag }} in openapi.yaml
+          chore(backstage): set metadata.name=${{ parameters.toggles.metadataNameFlag }},
+          spec.type=${{ parameters.toggles.specTypeFlag }} in openapi.yaml
 
   output:
     links:
