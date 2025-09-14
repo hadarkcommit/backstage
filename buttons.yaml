@@ -1,52 +1,60 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: toggle-openapi-with-prefill
-  title: Toggle booleans in openapi.yaml (prefilled)
-  description: 'Reads current booleans from YAML, pre-checks the boxes, and writes back in one commit.'
+  name: toggle-openapi-prefill
+  title: Toggle booleans in openapi.yaml (prefilled, one commit)
 spec:
   owner: group:default/platform
   type: utility
 
   parameters:
-    - title: Target repository
+    - title: Repo
       required: [repoOwner, repo, branch]
       properties:
-        repoOwner: { type: string, title: Owner/Org, default: hadarkcommit }
-        repo:      { type: string, title: Repo,      default: idp-ingestion-example }
-        branch:    { type: string, title: Branch,    default: main }
+        repoOwner: { type: string, default: hadarkcommit }
+        repo:      { type: string, default: idp-ingestion-example }
+        branch:    { type: string, default: main }
 
-    - title: Toggles (pre-filled from YAML)
-      required: [toggles]
+    - title: Flags
+      required: [metadataNameFlag, specTypeFlag]
       properties:
-        toggles:
-          type: object
-          ui:field: ToggleFromYaml            # <-- our field extension
+        metadataNameFlag:
+          type: boolean
+          title: metadata.name
+          ui:field: YamlBooleanToggle
           ui:options:
             ownerParam: repoOwner
             repoParam: repo
             branchParam: branch
             filePath: openapi.yaml
-            fields:
-              - { name: metadataNameFlag, title: 'metadata.name', path: 'metadata.name' }
-              - { name: specTypeFlag,     title: 'spec.type',     path: 'spec.type' }
+            yamlPath: metadata.name
+        specTypeFlag:
+          type: boolean
+          title: spec.type
+          ui:field: YamlBooleanToggle
+          ui:options:
+            ownerParam: repoOwner
+            repoParam: repo
+            branchParam: branch
+            filePath: openapi.yaml
+            yamlPath: spec.type
 
   steps:
     - id: commit
-      name: Apply both changes as one commit
+      name: Apply both changes in one commit
       action: github:file:yaml:commit:multi
       input:
         repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
         filePath: openapi.yaml
         changes:
           - yamlPath: metadata.name
-            value: ${{ parameters.toggles.metadataNameFlag }}
+            value: ${{ parameters.metadataNameFlag }}
           - yamlPath: spec.type
-            value: ${{ parameters.toggles.specTypeFlag }}
+            value: ${{ parameters.specTypeFlag }}
         targetBranchName: ${{ parameters.branch }}
         commitMessage: >-
-          chore(backstage): set metadata.name=${{ parameters.toggles.metadataNameFlag }},
-          spec.type=${{ parameters.toggles.specTypeFlag }} in openapi.yaml
+          chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }},
+          spec.type=${{ parameters.specTypeFlag }} in openapi.yaml
 
   output:
     links:
