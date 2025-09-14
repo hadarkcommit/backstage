@@ -1,9 +1,8 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: toggle-openapi-booleans-single-commit
-  title: Toggle booleans in openapi.yaml (single commit)
-  description: 'Two checkboxes that set boolean values at metadata.name and spec.type, then push once.'
+  name: toggle-openapi-booleans-direct-one-commit
+  title: Toggle booleans in openapi.yaml (direct, one commit)
 spec:
   owner: group:default/platform
   type: utility
@@ -12,66 +11,33 @@ spec:
     - title: Target repository
       required: [repoOwner, repo, branch]
       properties:
-        repoOwner:
-          title: Owner/Org
-          type: string
-          default: hadarkcommit
-        repo:
-          title: Repo
-          type: string
-          default: idp-ingestion-example
-        branch:
-          title: Target branch
-          type: string
-          default: main
+        repoOwner: { type: string, default: hadarkcommit }
+        repo:      { type: string, default: idp-ingestion-example }
+        branch:    { type: string, default: main }
 
-    - title: Pick fields to set (true/false)
+    - title: Pick fields
       required: [metadataNameFlag, specTypeFlag]
       properties:
-        metadataNameFlag:
-          title: metadata.name → boolean
-          type: boolean
-          default: false
-          description: 'If checked, set metadata.name to true; otherwise false.'
-        specTypeFlag:
-          title: spec.type → boolean
-          type: boolean
-          default: false
-          description: 'If checked, set spec.type to true; otherwise false.'
+        metadataNameFlag: { type: boolean, title: metadata.name → boolean, default: false }
+        specTypeFlag:     { type: boolean, title: spec.type → boolean,     default: false }
 
   steps:
-    - id: fetch
-      name: Fetch repo
-      action: fetch:plain
-      input:
-        url: https://github.com/${{ parameters.repoOwner }}/${{ parameters.repo }}/tree/${{ parameters.branch }}
-        targetPath: repo
-
-    - id: set-metadata
-      name: Set metadata.name (boolean)
-      action: yaml:set:any
-      input:
-        url: ./repo/openapi.yaml
-        path: metadata.name
-        value: ${{ parameters.metadataNameFlag }}
-
-    - id: set-spec-type
-      name: Set spec.type (boolean)
-      action: yaml:set:any
-      input:
-        url: ./repo/openapi.yaml
-        path: spec.type
-        value: ${{ parameters.specTypeFlag }}
-
-    - id: push
-      name: Push both changes as one commit
-      action: github:repo:push
+    - id: commit
+      name: Apply both changes in one commit
+      action: github:file:yaml:commit:multi
       input:
         repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
-        sourcePath: repo
+        filePath: openapi.yaml
+        changes:
+          - { yamlPath: metadata.name, value: ${{ parameters.metadataNameFlag }} }
+          - { yamlPath: spec.type,     value: ${{ parameters.specTypeFlag }} }
+        targetBranchName: ${{ parameters.branch }}
+        commitMessage: >-
+          chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }},
+          spec.type=${{ parameters.specTypeFlag }} in openapi.yaml
 
   output:
     links:
       - title: View commit
-        url: ${{ steps.push.output.commitUrl }}
+        url: ${{ steps.commit.output.commitUrl }}
 
