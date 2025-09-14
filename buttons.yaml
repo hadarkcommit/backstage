@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: toggle-openapi-fields-single-commit
-  title: Toggle fields in openapi.yaml (single commit)
-  description: 'Two checkboxes that set boolean values at metadata.name and spec.type, then push as one commit.'
+  name: toggle-openapi-booleans-single-commit
+  title: Toggle booleans in openapi.yaml (single commit)
+  description: 'Two checkboxes that set boolean values at metadata.name and spec.type, then push once.'
 spec:
   owner: group:default/platform
   type: utility
@@ -15,9 +15,11 @@ spec:
         repoOwner:
           title: Owner/Org
           type: string
+          default: hadarkcommit
         repo:
           title: Repo
           type: string
+          default: idp-ingestion-example
         branch:
           title: Target branch
           type: string
@@ -46,31 +48,30 @@ spec:
         targetPath: repo
 
     - id: set-metadata
-      name: Set metadata.name (workspace)
-      action: yaml:set
+      name: Set metadata.name (boolean)
+      action: yaml:set:any
       input:
         url: ./repo/openapi.yaml
         path: metadata.name
         value: ${{ parameters.metadataNameFlag }}
 
     - id: set-spec-type
-      name: Set spec.type (workspace)
-      action: yaml:set
+      name: Set spec.type (boolean)
+      action: yaml:set:any
       input:
         url: ./repo/openapi.yaml
         path: spec.type
         value: ${{ parameters.specTypeFlag }}
 
-    # Single commit that includes both changes above
     - id: push
-      name: Push changes as one commit
+      name: Push both changes as one commit
       action: github:repo:push
       input:
         repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
         branchName: ${{ parameters.branch }}
         commitMessage: >-
-          chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }}
-          and spec.type=${{ parameters.specTypeFlag }} in openapi.yaml
+          chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }},
+          spec.type=${{ parameters.specTypeFlag }} in openapi.yaml
         sourcePath: repo
 
   output:
