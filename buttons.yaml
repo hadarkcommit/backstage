@@ -68,10 +68,6 @@ spec:
       action: github:repo:push
       input:
         repoUrl: github.com?owner=${{ parameters.repoOwner }}&repo=${{ parameters.repo }}
-        branchName: ${{ parameters.branch }}
-        commitMessage: >-
-          chore(backstage): set metadata.name=${{ parameters.metadataNameFlag }},
-          spec.type=${{ parameters.specTypeFlag }} in openapi.yaml
         sourcePath: repo
 
   output:
