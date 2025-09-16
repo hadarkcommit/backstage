@@ -1,0 +1,58 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: toggle-openapi-prefill-gitea
+  title: Toggle booleans in openapi.yaml (Gitea, prefilled, one commit)
+  description: 'Prefills checkboxes from repo and lets dev change them; writes both in a single commit (Gitea).'
+spec:
+  owner: group:default/platform
+  type: utility
+
+  parameters:
+    - title: Repository
+      required: [repoOwner, repo, branch]
+      properties:
+        repoOwner: { type: string, default: hadarkr60 }
+        repo:      { type: string, default: backstage-test }
+        branch:    { type: string, default: main }
+
+    - title: Flags (prefilled from YAML)
+      required: [toggles]
+      properties:
+        toggles:
+          type: object
+          ui:field: YamlBooleanToggles
+          ui:options:
+            host: gitea.com                # 👈 hard-code Gitea host for prefill
+            ownerParam: repoOwner
+            repoParam: repo
+            branchParam: branch
+            filePath: openapi.yaml
+            fields:
+              - { name: metadataNameFlag, title: 'metadata.name', path: 'metadata.name' }
+              - { name: specTypeFlag,     title: 'spec.type',     path: 'spec.type' }
+
+  steps:
+    - id: commit
+      name: Apply both changes as one commit (Gitea)
+      action: gitea:file:yaml:commit:multi   # 👈 custom action below
+      input:
+        host: gitea.com
+        owner: ${{ parameters.repoOwner }}
+        repo:  ${{ parameters.repo }}
+        branch: ${{ parameters.branch }}
+        filePath: openapi.yaml
+        changes:
+          - yamlPath: metadata.name
+            value: ${{ parameters.toggles.metadataNameFlag }}
+          - yamlPath: spec.type
+            value: ${{ parameters.toggles.specTypeFlag }}
+        commitMessage: >-
+          chore(backstage): set metadata.name=${{ parameters.toggles.metadataNameFlag }},
+          spec.type=${{ parameters.toggles.specTypeFlag }} in openapi.yaml
+
+  output:
+    links:
+      - title: View commit (Gitea UI)
+        url: https://gitea.com/${{ parameters.repoOwner }}/${{ parameters.repo }}/src/branch/${{ parameters.branch }}/openapi.yaml
+
