@@ -3,34 +3,54 @@ kind: Template
 metadata:
   name: toggle-openapi-prefill-gitea
   title: Toggle booleans in openapi.yaml (Gitea, prefilled, one commit)
-  description: 'Prefills checkboxes from repo and lets dev change them; writes both in a single commit (Gitea).'
+  description: Prefills checkboxes from repo and lets dev change them; writes both in a single commit (Gitea).
 spec:
   owner: group:default/platform
   type: utility
+
+  parameters:
     - title: Flags (prefilled from YAML)
-      required: [toggles]
+      required: [repoOwner, repo, branch, toggles]
       properties:
+        # Hidden inputs so only one page renders
+        repoOwner:
+          title: ""
+          type: string
+          default: hadarkr60
+          ui:widget: hidden
+        repo:
+          title: ""
+          type: string
+          default: backstage-test
+          ui:widget: hidden
+        branch:
+          title: ""
+          type: string
+          default: main
+          ui:widget: hidden
+
+        # Visible toggles
         toggles:
           type: object
           ui:field: YamlBooleanToggles
           ui:options:
-            host: gitea.com                # 👈 hard-code Gitea host for prefill
-            ownerParam: hadarkr60
-            repoParam: backstage-test
-            branchParam: main
+            host: gitea.com
+            ownerParam: repoOwner     # uses the hidden fields above
+            repoParam: repo
+            branchParam: branch
             filePath: openapi.yaml
             fields:
-              - { name: metadataNameFlag, title: 'option1', path: 'metadata.name' }
-              - { name: specTypeFlag,     title: 'option2',     path: 'spec.type' }
+              - { name: metadataNameFlag, title: "option1", path: "metadata.name" }
+              - { name: specTypeFlag,     title: "option2", path: "spec.type" }
 
   steps:
     - id: commit
       name: Apply both changes as one commit (Gitea)
-      action: gitea:file:yaml:commit:multi   # 👈 custom action below
+      action: gitea:file:yaml:commit:multi
       input:
         host: gitea.com
-        owner: ${{ parameters.repoOwner }}
-        repo:  ${{ parameters.repo }}
+        owner:  ${{ parameters.repoOwner }}
+        repo:   ${{ parameters.repo }}
         branch: ${{ parameters.branch }}
         filePath: openapi.yaml
         changes:
