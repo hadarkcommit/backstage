@@ -29,8 +29,8 @@ spec:
             branchParam: branch
             filePath: openapi.yaml
             fields:
-              - { name: metadataNameFlag, title: 'metadata.name', path: 'metadata.name' }
-              - { name: specTypeFlag,     title: 'spec.type',     path: 'spec.type' }
+              - { name: metadataNameFlag, title: 'option1', path: 'metadata.name' }
+              - { name: specTypeFlag,     title: 'option2',     path: 'spec.type' }
 
   steps:
     - id: commit
