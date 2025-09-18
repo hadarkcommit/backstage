@@ -7,15 +7,6 @@ metadata:
 spec:
   owner: group:default/platform
   type: utility
-
-  parameters:
-    - title: Repository
-      required: [repoOwner, repo, branch]
-      properties:
-        repoOwner: { type: string, default: hadarkr60 }
-        repo:      { type: string, default: backstage-test }
-        branch:    { type: string, default: main }
-
     - title: Flags (prefilled from YAML)
       required: [toggles]
       properties:
@@ -24,9 +15,9 @@ spec:
           ui:field: YamlBooleanToggles
           ui:options:
             host: gitea.com                # 👈 hard-code Gitea host for prefill
-            ownerParam: repoOwner
-            repoParam: repo
-            branchParam: branch
+            ownerParam: hadarkr60
+            repoParam: backstage-test
+            branchParam: main
             filePath: openapi.yaml
             fields:
               - { name: metadataNameFlag, title: 'option1', path: 'metadata.name' }
