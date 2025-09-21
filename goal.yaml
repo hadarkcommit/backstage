@@ -1,0 +1,68 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: toggle-openapi-with-owner-gitea
+  title: Toggle flag & optional owner (Gitea, one commit)
+  description: >
+    Prefills metadata.name; if enabled, asks for spec.owner and spec.type, and writes all in one commit.
+spec:
+  owner: group:default/platform
+  type: utility
+
+  parameters:
+    - title: Flag & optional owner (prefilled from YAML)
+      required: [repoOwner, repo, branch, feature]
+      properties:
+        repoOwner: { title: "", type: string, default: hadarkr60, ui:widget: hidden }
+        repo:      { title: "", type: string, default: backstage-test, ui:widget: hidden }
+        branch:    { title: "", type: string, default: main, ui:widget: hidden }
+
+        feature:
+          type: object
+          title: Feature flag from openapi.yaml
+          ui:field: YamlFlagWithChoice
+          ui:options:
+            host: gitea.com
+            ownerParam: repoOwner
+            repoParam: repo
+            branchParam: branch
+            filePath: openapi.yaml
+            booleanPath: metadata.name
+            choicePath: spec.owner
+            choices: ["hadar", "no hadar"]
+
+        # New control (visible only because it’s simple to add in the template)
+        specTypeWhenEnabled:
+          type: boolean
+          title: "spec.type (applied only if enabled)"
+          default: false
+          ui:widget: radio
+
+  steps:
+    - id: commit
+      name: Apply changes in one commit (Gitea)
+      action: gitea:file:yaml:commit:multi
+      input:
+        host: gitea.com
+        owner:  ${{ parameters.repoOwner }}
+        repo:   ${{ parameters.repo }}
+        branch: ${{ parameters.branch }}
+        filePath: openapi.yaml
+        changes:
+          - yamlPath: metadata.name
+            value: ${{ parameters.feature.enabled }}
+          - yamlPath: spec.owner
+            value: ${{ parameters.feature.owner }}
+          - yamlPath: spec.type
+            value: ${{ parameters.feature.enabled && parameters.specTypeWhenEnabled || undefined }}
+        commitMessage: >-
+          chore(backstage): metadata.name=${{ parameters.feature.enabled }}
+          ${{ parameters.feature.owner && format(', spec.owner=%s', parameters.feature.owner) }}
+
+  output:
+    links:
+      - title: View file in Gitea
+        url: https://gitea.com/${{ parameters.repoOwner }}/${{ parameters.repo }}/src/branch/${{ parameters.branch }}/openapi.yaml
+      - title: Repo
+        url: https://gitea.com/${{ parameters.repoOwner }}/${{ parameters.repo }}
+
