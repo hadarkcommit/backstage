@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: toggle-openapi-with-owner-gitea
-  title: Toggle flag & optional owner (Gitea, one commit)
+  title: Test
   description: >
     Prefills metadata.name; if enabled, asks for spec.owner and spec.type, and writes all in one commit.
 spec:
