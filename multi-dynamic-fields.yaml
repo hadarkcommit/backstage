@@ -6,31 +6,31 @@ metadata:
   description: >
     Prefills a checkbox from openapi.yaml (metadata.name). If enabled, shows a “hadar/no hadar”
     selector for spec.owner. Writes changes in one commit to Gitea.
-
 spec:
   owner: group:default/platform
   type: utility
 
   parameters:
-    - title: Target repository (Gitea)
-      required: [repoOwner, repo, branch]
+    - title: Flag & optional owner (prefilled from YAML)
+      # these are still required, but hidden so the page is clean
+      required: [repoOwner, repo, branch, feature]
       properties:
         repoOwner:
+          title: ""
           type: string
-          title: Gitea owner
           default: hadarkr60
+          ui:widget: hidden
         repo:
+          title: ""
           type: string
-          title: Repo name
           default: backstage-test
+          ui:widget: hidden
         branch:
+          title: ""
           type: string
-          title: Branch
           default: main
+          ui:widget: hidden
 
-    - title: Flag & optional owner (prefilled from YAML)
-      required: [feature]
-      properties:
         feature:
           type: object
           title: Feature flag from openapi.yaml
@@ -45,13 +45,10 @@ spec:
             repoParam: repo
             branchParam: branch
             filePath: openapi.yaml
-
             # what to control
             booleanPath: metadata.name
             choicePath: spec.owner
-            choices:
-              - hadar
-              - no hadar
+            choices: ["hadar", "no hadar"]
 
   steps:
     - id: commit
@@ -59,11 +56,11 @@ spec:
       action: gitea:file:yaml:commit:multi
       input:
         host: gitea.com
-        owner: ${{ parameters.repoOwner }}
-        repo:  ${{ parameters.repo }}
+        owner:  ${{ parameters.repoOwner }}
+        repo:   ${{ parameters.repo }}
         branch: ${{ parameters.branch }}
         filePath: openapi.yaml
-        # NOTE: the action should ignore entries whose value === undefined.
+        # The action should ignore undefined values (see note below).
         changes:
           - yamlPath: metadata.name
             value: ${{ parameters.feature.enabled }}
