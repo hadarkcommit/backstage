@@ -4,7 +4,7 @@ metadata:
   name: toggle-openapi-with-owner-gitea
   title: Toggle flag & optional owner (Gitea, one commit)
   description: >
-    Prefills a checkbox from openapi.yaml (metadata.name). If enabled, shows a “hadar/no hadar”
+    Prefills a checkbox from openapi.yaml (metadata.name). If enabled, shows a “hadar / no hadar”
     selector for spec.owner. Writes changes in one commit to Gitea.
 spec:
   owner: group:default/platform
@@ -12,7 +12,7 @@ spec:
 
   parameters:
     - title: Flag & optional owner (prefilled from YAML)
-      # these are still required, but hidden so the page is clean
+      # single page: hide repo coords, show only the dynamic field
       required: [repoOwner, repo, branch, feature]
       properties:
         repoOwner:
@@ -39,15 +39,18 @@ spec:
             to choose an owner (hadar / no hadar) for spec.owner.
           ui:field: YamlFlagWithChoice
           ui:options:
-            # where to read/write
+            # where to read
             host: gitea.com
             ownerParam: repoOwner
             repoParam: repo
             branchParam: branch
             filePath: openapi.yaml
-            # what to control
+
+            # what to control in YAML
             booleanPath: metadata.name
-            choicePath: spec.owner
+            choicePath:  spec.owner
+
+            # runtime choices (no rebuild needed to change)
             choices: ["hadar", "no hadar"]
 
   steps:
@@ -60,7 +63,9 @@ spec:
         repo:   ${{ parameters.repo }}
         branch: ${{ parameters.branch }}
         filePath: openapi.yaml
-        # The action should ignore undefined values (see note below).
+        # NOTE: your action should ignore any change whose 'value' is undefined.
+        # When the checkbox is OFF, the UI will not set 'feature.owner',
+        # so spec.owner should be left untouched.
         changes:
           - yamlPath: metadata.name
             value: ${{ parameters.feature.enabled }}
