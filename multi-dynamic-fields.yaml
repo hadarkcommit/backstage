@@ -1,0 +1,82 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: toggle-openapi-with-owner-gitea
+  title: Toggle flag & optional owner (Gitea, one commit)
+  description: >
+    Prefills a checkbox from openapi.yaml (metadata.name). If enabled, shows a “hadar/no hadar”
+    selector for spec.owner. Writes changes in one commit to Gitea.
+
+spec:
+  owner: group:default/platform
+  type: utility
+
+  parameters:
+    - title: Target repository (Gitea)
+      required: [repoOwner, repo, branch]
+      properties:
+        repoOwner:
+          type: string
+          title: Gitea owner
+          default: hadarkr60
+        repo:
+          type: string
+          title: Repo name
+          default: backstage-test
+        branch:
+          type: string
+          title: Branch
+          default: main
+
+    - title: Flag & optional owner (prefilled from YAML)
+      required: [feature]
+      properties:
+        feature:
+          type: object
+          title: Feature flag from openapi.yaml
+          description: >
+            We’ll prefill metadata.name from the repo. If you enable it, you’ll be prompted
+            to choose an owner (hadar / no hadar) for spec.owner.
+          ui:field: YamlFlagWithChoice
+          ui:options:
+            # where to read/write
+            host: gitea.com
+            ownerParam: repoOwner
+            repoParam: repo
+            branchParam: branch
+            filePath: openapi.yaml
+
+            # what to control
+            booleanPath: metadata.name
+            choicePath: spec.owner
+            choices:
+              - hadar
+              - no hadar
+
+  steps:
+    - id: commit
+      name: Apply changes in one commit (Gitea)
+      action: gitea:file:yaml:commit:multi
+      input:
+        host: gitea.com
+        owner: ${{ parameters.repoOwner }}
+        repo:  ${{ parameters.repo }}
+        branch: ${{ parameters.branch }}
+        filePath: openapi.yaml
+        # NOTE: the action should ignore entries whose value === undefined.
+        changes:
+          - yamlPath: metadata.name
+            value: ${{ parameters.feature.enabled }}
+          - yamlPath: spec.owner
+            value: ${{ parameters.feature.owner }}
+        commitMessage: >-
+          chore(backstage): metadata.name=${{ parameters.feature.enabled }}
+          ${{ parameters.feature.owner && format(', spec.owner=%s', parameters.feature.owner) }}
+
+  output:
+    links:
+      - title: View file in Gitea
+        url: https://gitea.com/${{ parameters.repoOwner }}/${{ parameters.repo }}/src/branch/${{ parameters.branch }}/openapi.yaml
+      - title: Repo
+        url: https://gitea.com/${{ parameters.repoOwner }}/${{ parameters.repo }}
+
