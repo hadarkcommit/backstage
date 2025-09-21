@@ -1,42 +1,54 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: toggle-openapi-with-owner-gitea
-  title: Toggle flag & optional owner (Gitea, one commit)
+  name: toggle-openapi-generic
+  title: Toggle primary flag & multiple secondaries (Gitea)
   description: >
-    Prefills metadata.name; if enabled, asks for spec.owner and spec.type, and writes all in one commit.
+    Reads values from openapi.yaml; when primary is on, shows multiple string/boolean secondaries.
+    Writes everything in one commit to Gitea.
 spec:
   owner: group:default/platform
   type: utility
 
   parameters:
-    - title: Flag & optional owner (prefilled from YAML)
+    - title: Flags (prefilled from YAML)
       required: [repoOwner, repo, branch, feature]
       properties:
-        repoOwner: { title: "", type: string, default: hadarkr60, ui:widget: hidden }
-        repo:      { title: "", type: string, default: backstage-test, ui:widget: hidden }
-        branch:    { title: "", type: string, default: main, ui:widget: hidden }
+        # hidden repo coords
+        repoOwner: { type: string, default: hadarkr60, ui:widget: hidden, title: "" }
+        repo:      { type: string, default: backstage-test, ui:widget: hidden, title: "" }
+        branch:    { type: string, default: main, ui:widget: hidden, title: "" }
 
         feature:
           type: object
-          title: Feature flag from openapi.yaml
-          ui:field: YamlFlagWithChoice
+          title: "Feature controls"
+          ui:field: YamlConditionalFields
           ui:options:
             host: gitea.com
             ownerParam: repoOwner
             repoParam: repo
             branchParam: branch
             filePath: openapi.yaml
-            booleanPath: metadata.name
-            choicePath: spec.owner
-            choices: ["hadar", "no hadar"]
 
-        # New control (visible only because it’s simple to add in the template)
-        specTypeWhenEnabled:
-          type: boolean
-          title: "spec.type (applied only if enabled)"
-          default: false
-          ui:widget: radio
+            primary:
+              booleanPath: metadata.name
+              title: "Enable feature"
+
+            # configure ANY number of string fields
+            strings:
+              - path: spec.owner
+                title: "Owner"
+                choices: ["hadar", "no hadar"]
+              # - path: spec.channel
+              #   title: "Channel"
+              #   choices: ["alpha", "beta", "stable"]
+
+            # configure ANY number of boolean fields
+            booleans:
+              - path: spec.type
+                title: "Enable type"
+              # - path: spec.public
+              #   title: "Public API"
 
   steps:
     - id: commit
@@ -48,22 +60,13 @@ spec:
         repo:   ${{ parameters.repo }}
         branch: ${{ parameters.branch }}
         filePath: openapi.yaml
-        changes:
-          - yamlPath: metadata.name
-            value: ${{ parameters.feature.enabled }}
-          - yamlPath: spec.owner
-            value: ${{ parameters.feature.owner }}
-          - yamlPath: spec.type
-            value: ${{ parameters.feature.enabled and parameters.specTypeWhenEnabled or null }}
+        # 👇 The field outputs a ready-to-use `changes` array
+        changes: ${{ parameters.feature.changes }}
         commitMessage: >-
-          chore(backstage): metadata.name=${{ parameters.feature.enabled }}
-          ${{ parameters.feature.owner and format(', spec.owner=%s', parameters.feature.owner) or '' }}
-          ${{ parameters.feature.enabled and format(', spec.type=%s', parameters.specTypeWhenEnabled) or '' }}
+          chore(backstage): update openapi.yaml via template "toggle-openapi-generic"
 
   output:
     links:
       - title: View file in Gitea
         url: https://gitea.com/${{ parameters.repoOwner }}/${{ parameters.repo }}/src/branch/${{ parameters.branch }}/openapi.yaml
-      - title: Repo
-        url: https://gitea.com/${{ parameters.repoOwner }}/${{ parameters.repo }}
 
