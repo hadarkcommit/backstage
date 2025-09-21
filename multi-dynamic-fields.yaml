@@ -54,10 +54,11 @@ spec:
           - yamlPath: spec.owner
             value: ${{ parameters.feature.owner }}
           - yamlPath: spec.type
-            value: ${{ parameters.feature.enabled && parameters.specTypeWhenEnabled || undefined }}
+            value: ${{ parameters.feature.enabled and parameters.specTypeWhenEnabled or null }}
         commitMessage: >-
           chore(backstage): metadata.name=${{ parameters.feature.enabled }}
-          ${{ parameters.feature.owner && format(', spec.owner=%s', parameters.feature.owner) }}
+          ${{ parameters.feature.owner and format(', spec.owner=%s', parameters.feature.owner) or '' }}
+          ${{ parameters.feature.enabled and format(', spec.type=%s', parameters.specTypeWhenEnabled) or '' }}
 
   output:
     links:
