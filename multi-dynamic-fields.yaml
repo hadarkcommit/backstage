@@ -14,7 +14,6 @@ spec:
     - title: Flags (prefilled from YAML)
       required: [repoOwner, repo, branch, feature]
       properties:
-        # hidden repo coords
         repoOwner: { type: string, default: hadarkr60, ui:widget: hidden, title: "" }
         repo:      { type: string, default: backstage-test, ui:widget: hidden, title: "" }
         branch:    { type: string, default: main, ui:widget: hidden, title: "" }
@@ -34,21 +33,14 @@ spec:
               booleanPath: metadata.name
               title: "Enable feature"
 
-            # configure ANY number of string fields
             strings:
               - path: spec.owner
                 title: "Owner"
                 choices: ["hadar", "no hadar"]
-              # - path: spec.channel
-              #   title: "Channel"
-              #   choices: ["alpha", "beta", "stable"]
 
-            # configure ANY number of boolean fields
             booleans:
               - path: spec.type
                 title: "Enable type"
-              # - path: spec.public
-              #   title: "Public API"
 
   steps:
     - id: commit
@@ -60,8 +52,18 @@ spec:
         repo:   ${{ parameters.repo }}
         branch: ${{ parameters.branch }}
         filePath: openapi.yaml
-        # 👇 The field outputs a ready-to-use `changes` array
+
+        # what the field built for us
         changes: ${{ parameters.feature.changes }}
+
+        # tell the action whether primary is on/off
+        primaryEnabled: ${{ parameters.feature.enabled }}
+
+        # when primary is DISABLED, force this exact default:
+        defaultsWhenDisabled:
+          - yamlPath: spec.owner
+            value: "hadar"
+
         commitMessage: >-
           chore(backstage): update openapi.yaml via template "toggle-openapi-generic"
 
